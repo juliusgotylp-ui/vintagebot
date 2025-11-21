@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>VintageBot Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg-main: #020617;
+      --bg-elevated: #020617;
+      --bg-gradient: radial-gradient(circle at top left, #111827 0, #020617 45%);
+      --border-subtle: #1f2933;
+      --border-strong: #374151;
+      --text-primary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.12);
+      --accent-strong: #22c55e;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.75);
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-full: 999px;
+
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: var(--text-primary);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #020617 0, #020617 35%, #020617 100%);
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 960px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--bg-gradient);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.9);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(90deg, #020617, #020617 40%, #020617 100%);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bot-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top, #4f46e5, #020617 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: #e5e7eb;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(129, 140, 248, 0.8);
+    }
+
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bot-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    header span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .header-subtitle {
+      display: block;
+      margin-top: 2px;
+    }
+
+    #status {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .chat {
+      flex: 1;
+      padding: 16px 20px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(99, 102, 241, 0.06), transparent 55%);
+    }
+
+    .chat::-webkit-scrollbar {
+      width: 8px;
+    }
+    .chat::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .chat::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 999px;
+    }
+
+    .bubble-row {
+      display: flex;
+    }
+
+    .bubble-row.user {
+      justify-content: flex-end;
+    }
+
+    .bubble-row.bot {
+      justify-content: flex-start;
+    }
+
+    .bubble {
+      max-width: 80%;
+      padding: 10px 12px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      position: relative;
+      overflow: hidden;
+      animation: fadeInUp 0.18s ease-out;
+    }
+
+    .bubble::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .bubble.user {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-bottom-right-radius: 4px;
+      color: #f9fafb;
+      box-shadow: 0 12px 26px rgba(79, 70, 229, 0.45);
+    }
+
+    .bubble.bot {
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.22), transparent 70%),
+                  #020617;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.7);
+    }
+
+    .bubble:hover::before {
+      opacity: 0.1;
+    }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .item-card {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), #020617);
+      border-radius: 12px;
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.85);
+      transform: translateY(0);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .item-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.95);
+      border-color: rgba(99, 102, 241, 0.7);
+    }
+
+    .item-card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      background: #020617;
+    }
+
+    .item-body {
+      padding: 8px 9px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .item-title {
+      font-weight: 600;
+      color: #e5e7eb;
+      max-height: 3em;
+      overflow: hidden;
+    }
+
+    .item-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #9ca3af;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .item-brand {
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .item-price {
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(22, 163, 74, 0.12);
+      color: #bbf7d0;
+      border: 1px solid rgba(34, 197, 94, 0.5);
+    }
+
+    .item-link {
+      margin-top: 5px;
+    }
+
+    .item-link a {
+      color: #38bdf8;
+      font-size: 11px;
+      text-decoration: none;
+    }
+
+    .item-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Such-Badge über den Ergebnissen */
+    .search-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      margin-bottom: 6px;
+    }
+
+    .search-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 11px;
+      color: #e5e7eb;
+    }
+
+    .search-chip span.icon {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .search-chip span.label {
+      opacity: 0.85;
+    }
+
+    .input-bar {
+      border-top: 1px solid rgba(15, 23, 42, 0.9);
+      padding: 10px 14px;
+      display: flex;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), #020617 100%);
+    }
+
+    .input-bar input {
+      flex: 1;
+      padding: 11px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .input-bar input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.6), 0 10px 30px rgba(15, 23, 42, 0.9);
+      background: rgba(15, 23, 42, 1);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #6b7280;
+      font-style: italic;
+    }
+    input::-webkit-input-placeholder,
+    textarea::-webkit-input-placeholder {
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .input-bar button {
+      padding: 0 18px;
+      border-radius: 999px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 24px rgba(79, 70, 229, 0.6);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    .input-bar button:hover {
+      background: #6366f1;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(79, 70, 229, 0.75);
+    }
+
+    .input-bar button:active {
+      transform: translateY(0);
+      box-shadow: 0 8px 18px rgba(79, 70, 229, 0.55);
+    }
+
+    .input-bar button:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .chat-form {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .chat-form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .chat-form-row label {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .chat-form-row select,
+    .chat-form-row input {
+      padding: 7px 9px;
+      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      background: rgba(15, 23, 42, 0.95);
+      font-size: 13px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .chat-form-row input {
+      color: #e5e7eb !important;
+    }
+
+    .chat-form-row select:focus,
+    .chat-form-row input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.6);
+      background: #020617;
+    }
+
+    .chat-form-row select {
+      color: #e5e7eb;
+      font-style: normal;
+    }
+
+    .chat-form-row select:required:invalid {
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .chat-form-row select option {
+      color: #e5e7eb;
+      font-style: normal;
+      background: #020617;
+    }
+
+    .chat-form-row select option[disabled][hidden] {
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .chat-form button {
+      align-self: flex-end;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      background: var(--accent-strong);
+      color: #022c22;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(22, 163, 74, 0.65);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    .chat-form button:hover {
+      background: #16a34a;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(22, 163, 74, 0.8);
+    }
+
+    .chat-form button:active {
+      transform: translateY(0);
+      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.6);
+    }
+
+    .chat-form button:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .loader {
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      border: 2px solid #4b5563;
+      border-top-color: #e5e7eb;
+      animation: spin 0.7s linear infinite;
+      margin-top: 4px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 8px;
+      }
+      .app {
+        border-radius: 18px;
+      }
+      .bubble {
+        max-width: 92%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-left">
+        <div class="bot-avatar">VB</div>
+        <div>
+          <h1>
+            VintageBot
+            <span class="bot-pill">
+              <span class="status-dot"></span>
+              Vinted-Assistant
+            </span>
+          </h1>
+          <span class="header-subtitle">Suche Vinted-Schnäppchen per Chat</span>
+        </div>
+      </div>
+      <span id="status">Bereit</span>
+    </header>
+
+    <div id="chat" class="chat"></div>
+
+    <form id="textForm" class="input-bar">
+      <input
+        id="messageInput"
+        type="text"
+        placeholder='Frag mich etwas oder schreib „Formular“ zum Starten'
+        autocomplete="off"
+      />
+      <button type="submit">
+        <span>Senden</span>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const N8N_WEBHOOK_URL = "http://localhost:5678/webhook/vintagebot-chat";
+
+    const chatEl = document.getElementById("chat");
+    const statusEl = document.getElementById("status");
+    const textFormEl = document.getElementById("textForm");
+    const inputEl = document.getElementById("messageInput");
+
+    let initialFormCreated = false;
+
+    function scrollChatToBottom() {
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function addMessage(role, text) {
+      const row = document.createElement("div");
+      row.className = "bubble-row " + (role === "user" ? "user" : "bot");
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble " + (role === "user" ? "user" : "bot");
+      bubble.textContent = text;
+
+      row.appendChild(bubble);
+      chatEl.appendChild(row);
+      scrollChatToBottom();
+      return row;
+    }
+
+    function addNoResultsHint(meta) {
+      const row = document.createElement("div");
+      row.className = "bubble-row bot";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble bot";
+
+      const lines = [];
+      lines.push("Ich habe leider keine passenden Artikel gefunden 😕");
+      lines.push(" ");
+      lines.push("Tipps:");
+      lines.push("• Versuche eine andere Größe oder Qualität");
+      lines.push("• Erhöhe den maximalen Preis ein wenig");
+      if (meta && meta.Brand) {
+        lines.push(`• Probiere ggf. eine andere Marke als „${meta.Brand}“`);
+      }
+
+      bubble.textContent = lines.join("\n");
+      row.appendChild(bubble);
+      chatEl.appendChild(row);
+      scrollChatToBottom();
+    }
+
+    function addItems(items, meta) {
+      if (!items || !items.length) return;
+
+      const row = document.createElement("div");
+      row.className = "bubble-row bot";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble bot";
+
+      const title = document.createElement("div");
+      title.textContent = "Hier sind passende Treffer:";
+      title.style.marginBottom = "4px";
+      bubble.appendChild(title);
+
+      // Such-Badge / Chips
+      if (meta) {
+        const summary = document.createElement("div");
+        summary.className = "search-summary";
+
+        const brand = meta.Brand;
+        const size = meta.Size;
+        const price = meta["preis in EUR"];
+        const qual = meta["Qualität des Kleidungstücks"];
+        const gender = meta.Geschlecht;
+
+        if (brand) {
+          const chip = document.createElement("div");
+          chip.className = "search-chip";
+          chip.innerHTML = `<span class="icon">👕</span><span class="label">${brand}</span>`;
+          summary.appendChild(chip);
+        }
+        if (size) {
+          const chip = document.createElement("div");
+          chip.className = "search-chip";
+          chip.innerHTML = `<span class="icon">📏</span><span class="label">${size}</span>`;
+          summary.appendChild(chip);
+        }
+        if (qual) {
+          const chip = document.createElement("div");
+          chip.className = "search-chip";
+          chip.innerHTML = `<span class="icon">⭐</span><span class="label">${qual}</span>`;
+          summary.appendChild(chip);
+        }
+        if (price != null && price !== "" && !Number.isNaN(Number(price))) {
+          const chip = document.createElement("div");
+          chip.className = "search-chip";
+          chip.innerHTML = `<span class="icon">💶</span><span class="label">Max. ${price} €</span>`;
+          summary.appendChild(chip);
+        }
+        if (gender) {
+          const chip = document.createElement("div");
+          chip.className = "search-chip";
+          chip.innerHTML = `<span class="icon">🧍</span><span class="label">${gender}</span>`;
+          summary.appendChild(chip);
+        }
+
+        if (summary.children.length) {
+          bubble.appendChild(summary);
+        }
+      }
+
+      const grid = document.createElement("div");
+      grid.className = "items-grid";
+
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "item-card";
+
+        if (item.image) {
+          const img = document.createElement("img");
+          img.src = item.image;
+          img.alt = item.title || "Artikelbild";
+          card.appendChild(img);
+        }
+
+        const body = document.createElement("div");
+        body.className = "item-body";
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "item-title";
+        titleEl.textContent = item.title || "Ohne Titel";
+        body.appendChild(titleEl);
+
+        const metaRow = document.createElement("div");
+        metaRow.className = "item-meta";
+
+        const brandSpan = document.createElement("span");
+        brandSpan.className = "item-brand";
+        brandSpan.textContent = item.brand || "Marke n/a";
+
+        const priceSpan = document.createElement("span");
+        priceSpan.className = "item-price";
+        if (item.price != null) {
+          priceSpan.textContent = `${item.price} ${item.currency || "€"}`;
+        } else {
+          priceSpan.textContent = "Preis n/a";
+        }
+
+        metaRow.appendChild(brandSpan);
+        metaRow.appendChild(priceSpan);
+        body.appendChild(metaRow);
+
+        if (item.url) {
+          const link = document.createElement("div");
+          link.className = "item-link";
+          link.innerHTML = `<a href="${item.url}" target="_blank" rel="noopener noreferrer">Auf Vinted öffnen</a>`;
+          body.appendChild(link);
+        }
+
+        card.appendChild(body);
+        grid.appendChild(card);
+      });
+
+      bubble.appendChild(grid);
+      row.appendChild(bubble);
+      chatEl.appendChild(row);
+      scrollChatToBottom();
+    }
+
+    function setLoading(loading) {
+      if (loading) {
+        statusEl.textContent = "Suche läuft…";
+      } else {
+        statusEl.textContent = "Bereit";
+      }
+    }
+
+    function addLoaderBubble() {
+      const row = document.createElement("div");
+      row.className = "bubble-row bot";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble bot";
+
+      const text = document.createElement("div");
+      text.textContent = "Suche läuft … das kann ca. 25 Sekunden dauern.";
+      text.style.marginBottom = "6px";
+
+      const loader = document.createElement("div");
+      loader.className = "loader";
+
+      bubble.appendChild(text);
+      bubble.appendChild(loader);
+      row.appendChild(bubble);
+      chatEl.appendChild(row);
+      scrollChatToBottom();
+
+      return row;
+    }
+
+    // payload = body an n8n, meta = für Summary/No-Results
+    async function sendSearchToBackend(payload, loaderRow, meta, onDone) {
+      setLoading(true);
+      try {
+        const res = await fetch(N8N_WEBHOOK_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const items = data.items || [];
+        const hasItems = Array.isArray(items) && items.length > 0;
+
+        const botMessage =
+          typeof data.message === "string"
+            ? data.message
+            : hasItems
+            ? "Hier sind deine Ergebnisse."
+            : "Ich habe leider keine passenden Artikel gefunden.";
+
+        if (loaderRow && loaderRow.remove) loaderRow.remove();
+
+        addMessage("bot", botMessage);
+
+        if (hasItems) {
+          addItems(items, meta);
+        } else {
+          addNoResultsHint(meta);
+        }
+      } catch (err) {
+        console.error(err);
+        if (loaderRow && loaderRow.remove) loaderRow.remove();
+        addMessage(
+          "bot",
+          "Da ist etwas schiefgelaufen. Prüfe bitte die n8n-Webhook-URL und ob der Workflow aktiv ist."
+        );
+      } finally {
+        setLoading(false);
+        if (typeof onDone === "function") onDone();
+      }
+    }
+
+    function createFormBubble() {
+      const row = document.createElement("div");
+      row.className = "bubble-row bot";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble bot";
+
+      const intro = document.createElement("div");
+      intro.textContent =
+        "Lass uns dein Vintage-Piece suchen. Füll kurz dieses Formular aus:";
+      intro.style.marginBottom = "6px";
+      bubble.appendChild(intro);
+
+      const form = document.createElement("form");
+      form.className = "chat-form";
+
+      const brandRow = document.createElement("div");
+      brandRow.className = "chat-form-row";
+      const brandLabel = document.createElement("label");
+      brandLabel.textContent = "Brand";
+      const brandSelect = document.createElement("select");
+      brandSelect.required = true;
+      const brandPlaceholder = document.createElement("option");
+      brandPlaceholder.value = "";
+      brandPlaceholder.textContent = "Brand auswählen…";
+      brandPlaceholder.disabled = true;
+      brandPlaceholder.selected = true;
+      brandPlaceholder.hidden = true;
+      brandSelect.appendChild(brandPlaceholder);
+      ["Ralph Lauren Polo", "Lacoste", "Moncler"].forEach((b) => {
+        const opt = document.createElement("option");
+        opt.value = b;
+        opt.textContent = b;
+        brandSelect.appendChild(opt);
+      });
+      brandRow.appendChild(brandLabel);
+      brandRow.appendChild(brandSelect);
+
+      const sizeRow = document.createElement("div");
+      sizeRow.className = "chat-form-row";
+      const sizeLabel = document.createElement("label");
+      sizeLabel.textContent = "Size";
+      const sizeSelect = document.createElement("select");
+      sizeSelect.required = true;
+      const sizePlaceholder = document.createElement("option");
+      sizePlaceholder.value = "";
+      sizePlaceholder.textContent = "Größe auswählen…";
+      sizePlaceholder.disabled = true;
+      sizePlaceholder.selected = true;
+      sizePlaceholder.hidden = true;
+      sizeSelect.appendChild(sizePlaceholder);
+      ["XS", "S", "M", "L", "XL"].forEach((s) => {
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        sizeSelect.appendChild(opt);
+      });
+      sizeRow.appendChild(sizeLabel);
+      sizeRow.appendChild(sizeSelect);
+
+      const priceRow = document.createElement("div");
+      priceRow.className = "chat-form-row";
+      const priceLabel = document.createElement("label");
+      priceLabel.textContent = "Preis in EUR (max.)";
+      const priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.min = "1";
+      priceInput.placeholder = "Preis in EUR (max.)";
+      priceRow.appendChild(priceLabel);
+      priceRow.appendChild(priceInput);
+
+      const qualRow = document.createElement("div");
+      qualRow.className = "chat-form-row";
+      const qualLabel = document.createElement("label");
+      qualLabel.textContent = "Qualität des Kleidungsstücks";
+      const qualSelect = document.createElement("select");
+      qualSelect.required = true;
+      const qualPlaceholder = document.createElement("option");
+      qualPlaceholder.value = "";
+      qualPlaceholder.textContent = "Qualität auswählen…";
+      qualPlaceholder.disabled = true;
+      qualPlaceholder.selected = true;
+      qualPlaceholder.hidden = true;
+      qualSelect.appendChild(qualPlaceholder);
+      ["neu", "sehr gut", "gut", "befriedigend"].forEach((q) => {
+        const opt = document.createElement("option");
+        opt.value = q;
+        opt.textContent = q;
+        qualSelect.appendChild(opt);
+      });
+      qualRow.appendChild(qualLabel);
+      qualRow.appendChild(qualSelect);
+
+      const genderRow = document.createElement("div");
+      genderRow.className = "chat-form-row";
+      const genderLabel = document.createElement("label");
+      genderLabel.textContent = "Geschlecht";
+      const genderSelect = document.createElement("select");
+      genderSelect.required = true;
+      const genderPlaceholder = document.createElement("option");
+      genderPlaceholder.value = "";
+      genderPlaceholder.textContent = "Geschlecht wählen…";
+      genderPlaceholder.disabled = true;
+      genderPlaceholder.selected = true;
+      genderPlaceholder.hidden = true;
+      genderSelect.appendChild(genderPlaceholder);
+      ["Mann", "Frau"].forEach((g) => {
+        const opt = document.createElement("option");
+        opt.value = g;
+        opt.textContent = g;
+        genderSelect.appendChild(opt);
+      });
+      genderRow.appendChild(genderLabel);
+      genderRow.appendChild(genderSelect);
+
+      const submitBtn = document.createElement("button");
+      submitBtn.type = "submit";
+      submitBtn.textContent = "Suche starten";
+
+      form.appendChild(brandRow);
+      form.appendChild(sizeRow);
+      form.appendChild(priceRow);
+      form.appendChild(qualRow);
+      form.appendChild(genderRow);
+      form.appendChild(submitBtn);
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const payload = {
+          Brand: brandSelect.value,
+          Size: sizeSelect.value,
+          "preis in EUR": Number(priceInput.value || 3),
+          "Qualität des Kleidungstücks": qualSelect.value,
+          Geschlecht: genderSelect.value,
+        };
+
+        submitBtn.disabled = true;
+
+        const loaderRow = addLoaderBubble();
+
+        // payload als meta weitergeben (für Badge & No-Results)
+        sendSearchToBackend(payload, loaderRow, payload, () => {
+          addFormBubbleAfterSearch();
+        });
+      });
+
+      bubble.appendChild(form);
+      row.appendChild(bubble);
+      chatEl.appendChild(row);
+      scrollChatToBottom();
+    }
+
+    function addFormBubbleInitial() {
+      if (initialFormCreated) return;
+      initialFormCreated = true;
+      createFormBubble();
+    }
+
+    function addFormBubbleAfterSearch() {
+      createFormBubble();
+    }
+
+    textFormEl.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = inputEl.value.trim();
+      if (!text) return;
+      addMessage("user", text);
+      inputEl.value = "";
+
+      if (!initialFormCreated) {
+        addMessage(
+          "bot",
+          "Ich schicke dir ein Formular, damit ich genau weiß, was du suchst 👇"
+        );
+        addFormBubbleInitial();
+      } else {
+        addMessage(
+          "bot",
+          "Ich habe dir unten ein neues Formular eingefügt 👇"
+        );
+        addFormBubbleAfterSearch();
+      }
+    });
+
+    addMessage(
+      "bot",
+      "Hey, ich bin dein VintageBot 👋\nIch suche für dich günstige Vintage-Teile auf Vinted.\nIch zeige dir direkt ein Formular."
+    );
+    addFormBubbleInitial();
+  </script>
+</body>
+</html>
+
+
+
